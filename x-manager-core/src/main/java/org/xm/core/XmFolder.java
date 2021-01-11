@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Folder implements INode {
+public class XmFolder implements INode {
 
     private long id;
     private String name;
@@ -16,7 +16,7 @@ public class Folder implements INode {
     private List<INode> children;
     private Map<String, INode> nodeMap;
 
-    public Folder(INode parent, String name, long id) throws FileAlreadyExistsException, FolderAlreadyExistsException {
+    public XmFolder(INode parent, String name, long id) throws FileAlreadyExistsException, FolderAlreadyExistsException {
         this.name = name;
         this.id = id;
         this.parent = parent;
@@ -66,9 +66,15 @@ public class Folder implements INode {
         return String.format("%s/%s", this.parent().absolutePath(), this.name());
     }
 
+    @Override
+    public void removeChild(INode child) {
+        this.nodeMap.remove(child.name());
+        children.remove(child);
+    }
+
     private void updateParent() throws FileAlreadyExistsException, FolderAlreadyExistsException {
         if (this.parent() != null) {
-            if (this.parent().getChild(this.name) == null){
+            if (this.parent().getChild(this.name) == null) {
                 this.parent().addChild(this);
             } else {
                 if (this.isLeaf())

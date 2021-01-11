@@ -4,13 +4,13 @@ import org.xm.core.exception.FileAlreadyExistsException;
 import org.xm.core.exception.UnsupportedOperationException;
 import java.util.List;
 
-public class File implements INode {
+public class XmFile implements INode {
 
     private long id;
     private String name;
     private INode parent;
 
-    public File(INode parent, String name, long id) throws FileAlreadyExistsException, UnsupportedOperationException {
+    public XmFile(INode parent, String name, long id) throws FileAlreadyExistsException, UnsupportedOperationException {
         this.parent = parent;
         this.name = name;
         this.id = id;
@@ -54,6 +54,11 @@ public class File implements INode {
     @Override
     public String absolutePath() {
         return String.format("%s/%s", this.parent().absolutePath(), this.name());
+    }
+
+    @Override
+    public void removeChild(INode child) {
+
     }
 
     private void updateParent() throws FileAlreadyExistsException, UnsupportedOperationException {

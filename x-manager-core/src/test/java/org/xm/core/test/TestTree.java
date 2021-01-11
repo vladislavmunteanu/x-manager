@@ -1,13 +1,12 @@
 package org.xm.core.test;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.xm.core.File;
-import org.xm.core.Folder;
+import org.xm.core.XmFile;
+import org.xm.core.XmFolder;
 import org.xm.core.INode;
-import org.xm.core.Root;
+import org.xm.core.XmRoot;
 import org.xm.core.exception.FileAlreadyExistsException;
 import org.xm.core.exception.FolderAlreadyExistsException;
 import org.xm.core.exception.UnsupportedOperationException;
@@ -22,11 +21,11 @@ public class TestTree {
 
     @BeforeClass
     public static void setUp() throws FileAlreadyExistsException, FolderAlreadyExistsException, UnsupportedOperationException {
-        root = Root.getRootInstance("");
-        folderOne = new Folder(root, "folder_001", 1);
-        folderTwo = new Folder(root, "folder_002", 3);
-        fileOne = new File(folderOne, "file_001", 4);
-        fileTwo = new File(folderTwo, "file_002", 5);
+        root = XmRoot.getRootInstance("");
+        folderOne = new XmFolder(root, "folder_001", 1);
+        folderTwo = new XmFolder(root, "folder_002", 3);
+        fileOne = new XmFile(folderOne, "file_001", 4);
+        fileTwo = new XmFile(folderTwo, "file_002", 5);
     }
 
     @Test
@@ -59,7 +58,7 @@ public class TestTree {
     @Test
     public void testAddSameFileFolder(){
         try {
-            INode newFolderOne = new Folder(root, "folder_001", 100);
+            INode newFolderOne = new XmFolder(root, "folder_001", 100);
             Assert.fail("FolderAlreadyExistsException expected here");
         } catch (FileAlreadyExistsException | FolderAlreadyExistsException e) {
             if (e instanceof FileAlreadyExistsException)
@@ -67,7 +66,7 @@ public class TestTree {
         }
 
         try {
-            INode newFileOne = new File(folderOne, "file_001", 100);
+            INode newFileOne = new XmFile(folderOne, "file_001", 100);
             Assert.fail("FileAlreadyExistsException expected here");
         } catch (FileAlreadyExistsException | UnsupportedOperationException e) {
             if (e instanceof UnsupportedOperationException)
@@ -79,7 +78,7 @@ public class TestTree {
     @Test
     public void testAddChildToFile(){
         try {
-            INode fileChild = new File(fileOne, "fileChild", 101);
+            INode fileChild = new XmFile(fileOne, "fileChild", 101);
             Assert.fail("UnsupportedOperationException expected here");
         } catch (FileAlreadyExistsException | UnsupportedOperationException e) {
             if (e instanceof FileAlreadyExistsException)

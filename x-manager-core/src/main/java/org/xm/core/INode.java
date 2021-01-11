@@ -19,4 +19,6 @@ public interface INode {
     INode getChild(String name);
 
     String absolutePath();
+
+    void removeChild(INode child);
 }
