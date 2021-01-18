@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/x-manager.iml" filepath="$PROJECT_DIR$/x-manager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/x-manager-app/x-manager-app.iml" filepath="$PROJECT_DIR$/x-manager-app/x-manager-app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/x-manager-core/x-manager-core.iml" filepath="$PROJECT_DIR$/x-manager-core/x-manager-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/x-manager-engine/x-manager-engine.iml" filepath="$PROJECT_DIR$/x-manager-engine/x-manager-engine.iml" />
+    </modules>
+  </component>
+</project>
