@@ -14,8 +14,6 @@ public final class SystemManager extends AbstractBehavior<SystemMessage> {
 
     private Configuration conf;
     private Boolean systemStarted;
-    private ActorRef<SystemMessage> scannerRouter;
-    private ActorRef<SystemMessage> fileRouter;
     private RouterRegistry routerRegistry;
 
     private SystemManager(ActorContext<SystemMessage> context, Configuration conf) {
@@ -39,15 +37,15 @@ public final class SystemManager extends AbstractBehavior<SystemMessage> {
 
     private Behavior<SystemMessage> onSystemStart(SystemMessage message) {
         if (!systemStarted) {
-            getContext().getLog().info("Start system request received");
             PoolRouter<SystemMessage> scannerPool = Routers.pool(5, Behaviors.supervise(FileScanner.create(conf.getConnectorPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
             PoolRouter<SystemMessage> fileRouterPool = Routers.pool(5, Behaviors.supervise(FileRouter.create(conf.getRepositoryPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
-            scannerRouter = getContext().spawn(scannerPool, "scanner-pool");
-            fileRouter = getContext().spawn(fileRouterPool, "file-router-pool");
+            ActorRef<SystemMessage> scannerRouter = getContext().spawn(scannerPool, "scanner-pool");
+            ActorRef<SystemMessage> fileRouter = getContext().spawn(fileRouterPool, "file-router-pool");
             routerRegistry.registerRouter("scanner-pool", scannerRouter);
             routerRegistry.registerRouter("file-router-pool", fileRouter);
             systemStarted = true;
         }
+        getContext().getLog().info("System is up and running");
         return this;
     }
 }

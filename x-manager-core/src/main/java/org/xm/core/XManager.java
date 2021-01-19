@@ -22,9 +22,9 @@ public class XManager {
         return instance;
     }
 
-//    public static void main(String[] args){
-//        Configuration conf = new Configuration();
-//        XManager xManager = new XManager(conf);
-//    }
+    public static void main(String[] args){
+        Configuration conf = new Configuration();
+        XManager xManager = new XManager(conf);
+    }
 
 }

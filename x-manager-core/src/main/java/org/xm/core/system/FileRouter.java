@@ -6,6 +6,8 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
+import org.xm.core.system.message.FileMoved;
+import org.xm.core.system.message.MoveFile;
 import org.xm.core.system.message.StartSystem;
 import org.xm.core.system.message.SystemMessage;
 
@@ -19,6 +21,7 @@ public final class FileRouter extends AbstractBehavior<SystemMessage> {
         super(context);
         this.repositoryPath = repositoryPath;
         this.routerRegistry = RouterRegistry.getInstance();
+        getContext().getLog().debug("New file router created");
     }
 
     public static Behavior<SystemMessage> create(String repositoryPath) {
@@ -27,7 +30,22 @@ public final class FileRouter extends AbstractBehavior<SystemMessage> {
 
     @Override
     public Receive<SystemMessage> createReceive() {
-        return newReceiveBuilder().build();
+        return newReceiveBuilder()
+                .onMessage(MoveFile.class, this::onMoveFile)
+                .build();
+    }
+
+    private Behavior<SystemMessage> onMoveFile(SystemMessage message) {
+        System.out.println(message.getContext().toString() + " file routed");
+        SystemMessage fileMoved = new FileMoved(message.getRequestId(), getContext().getSelf(), scannerRouter, message.getContext());
+        sendMessage(fileMoved);
+        return this;
+    }
+
+    private void sendMessage(SystemMessage message) {
+        if (scannerRouter == null)
+            scannerRouter = routerRegistry.getRouter("scanner-pool");
+        scannerRouter.tell(message);
     }
 
 }
