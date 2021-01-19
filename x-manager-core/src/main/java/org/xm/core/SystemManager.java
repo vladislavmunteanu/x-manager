@@ -12,9 +12,9 @@ import org.xm.core.system.message.SystemMessage;
 
 public final class SystemManager extends AbstractBehavior<SystemMessage> {
 
-    private Configuration conf;
+    private final Configuration conf;
+    private final RouterRegistry routerRegistry;
     private Boolean systemStarted;
-    private RouterRegistry routerRegistry;
 
     private SystemManager(ActorContext<SystemMessage> context, Configuration conf) {
         super(context);

@@ -8,10 +8,10 @@ import org.xm.core.system.message.SystemMessage;
 
 public class ScannerWorker implements Runnable {
 
-    private ActorRef<SystemMessage> scanner;
-    private String connectorPath;
     private Boolean canStop;
-    private static Logger logger = LoggerFactory.getLogger(ScannerWorker.class);
+    private final String connectorPath;
+    private final ActorRef<SystemMessage> scanner;
+    private static final Logger logger = LoggerFactory.getLogger(ScannerWorker.class);
 
     public ScannerWorker(String connectorPath, ActorRef<SystemMessage> scanner) {
         this.connectorPath = connectorPath;
