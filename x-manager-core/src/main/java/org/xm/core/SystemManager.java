@@ -37,8 +37,8 @@ public final class SystemManager extends AbstractBehavior<SystemMessage> {
 
     private Behavior<SystemMessage> onSystemStart(SystemMessage message) {
         if (!systemStarted) {
-            PoolRouter<SystemMessage> scannerPool = Routers.pool(5, Behaviors.supervise(FileScanner.create(conf.getConnectorPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
-            PoolRouter<SystemMessage> fileRouterPool = Routers.pool(5, Behaviors.supervise(FileRouter.create(conf.getRepositoryPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
+            PoolRouter<SystemMessage> scannerPool = Routers.pool(1, Behaviors.supervise(FileScanner.create(conf.getConnectorPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
+            PoolRouter<SystemMessage> fileRouterPool = Routers.pool(1, Behaviors.supervise(FileRouter.create(conf.getRepositoryPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
             ActorRef<SystemMessage> scannerRouter = getContext().spawn(scannerPool, "scanner-pool");
             ActorRef<SystemMessage> fileRouter = getContext().spawn(fileRouterPool, "file-router-pool");
             routerRegistry.registerRouter("scanner-pool", scannerRouter);

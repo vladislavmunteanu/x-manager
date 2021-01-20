@@ -2,11 +2,20 @@ package org.xm.core;
 
 public class Configuration {
 
-    public String getConnectorPath(){
-        return "";
+    private String connectorPath;
+    private String repositoryPath;
+
+    public Configuration() {
+
     }
 
-    public String getRepositoryPath(){
-        return "";
+    public String getConnectorPath() {
+        //return this.connectorPath;
+        return "/Users/Vlad/VladMac/WorkSpace/Maculator/test-xm/connector";
+    }
+
+    public String getRepositoryPath() {
+        //return this.repositoryPath;
+        return "/Users/Vlad/VladMac/WorkSpace/Maculator/test-xm/repository";
     }
 }
