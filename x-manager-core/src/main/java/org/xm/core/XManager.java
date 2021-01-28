@@ -9,7 +9,7 @@ public class XManager {
     private Configuration conf;
     private static XManager instance;
 
-    private XManager(Configuration conf) {
+    public XManager(Configuration conf) {
         this.conf = conf;
         ActorRef<SystemMessage> systemManager = ActorSystem.create(SystemManager.create(conf), "system-manager");
         systemManager.tell(new StartSystem(0, systemManager, systemManager));

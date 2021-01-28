@@ -32,7 +32,7 @@ public class ScannerWorker implements Runnable {
     @Override
     public void run() {
         while (!canStop) {
-            String fileToProcess = scan();
+            String fileToProcess = scan(connectorPath);
             if (fileToProcess != null) {
                 Long requestId = fileToProcess.hashCode() + System.currentTimeMillis();
                 SystemMessage moveFile = new MoveFile(requestId, scanner, scanner, fileToProcess);
@@ -49,23 +49,44 @@ public class ScannerWorker implements Runnable {
         }
     }
 
-    private String scan() {
+    private String scan(String connectorPath) {
         File connector = new File(connectorPath);
         File[] files = connector.listFiles();
-        if (files != null) {
+        if (files != null && files.length > 0) {
             for (File file : files) {
-                if (!filesCache.contains(file.getAbsolutePath()) && file.isFile() && !file.getName().endsWith(".lock")) {
-                    Path lockFilePath = Paths.get(String.format("%s.lock", file));
+                if (file.getName().startsWith("."))
+                    filesCache.add(file.getAbsolutePath());
+                if (file.isFile() && !filesCache.contains(file.getAbsolutePath()) && !file.getName().endsWith(".lock")) {
+                    Path lockedFilePath = Paths.get(String.format("%s.lock", file));
                     try {
-                        Files.createFile(lockFilePath);
+                        Files.createFile(lockedFilePath);
                         filesCache.add(file.getAbsolutePath());
                         return file.getAbsolutePath();
                     } catch (IOException e) {
-                        logger.debug("Skip file '{}' as it's already in progress", file);
+                        logger.warn("Skip file '{}' as it's already in progress", file, e);
                     }
+
+                } else if (file.isDirectory() && !filesCache.contains(file.getAbsolutePath())) {
+                    return scan(file.getAbsolutePath());
                 }
             }
+        } else if (!connectorPath.equals(this.connectorPath) && !connectorPath.endsWith(".lock")) {
+            Path lockedFolderPath = Paths.get(String.format("%s.lock", connectorPath));
+            try {
+                Files.createFile(lockedFolderPath);
+                filesCache.add(connectorPath);
+            } catch (IOException e) {
+                logger.warn("Folder '{}' was deleted already", connectorPath);
+            }
+            try {
+                Files.delete(Paths.get(connectorPath));
+                Files.delete(lockedFolderPath);
+                filesCache.remove(connectorPath);
+            } catch (IOException e) {
+                logger.error("Failed to delete empty folder '{}'", connectorPath, e);
+            }
         }
+
         return null;
     }
 
