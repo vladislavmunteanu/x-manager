@@ -6,22 +6,19 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import org.xm.core.system.message.FileMoved;
-import org.xm.core.system.message.MoveFile;
-import org.xm.core.system.message.StartSystem;
+import org.xm.core.system.command.Command;
+import org.xm.core.system.command.Commands;
+import org.xm.core.system.file.XmItem;
+import org.xm.core.system.message.RouteFile;
 import org.xm.core.system.message.SystemMessage;
+import org.xm.core.system.message.XmCommand;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 public final class FileRouter extends AbstractBehavior<SystemMessage> {
 
     private String repositoryPath;
     private ActorRef<SystemMessage> scannerRouter;
+    private ActorRef<SystemMessage> fileCommander;
     private RouterRegistry routerRegistry;
 
     private FileRouter(ActorContext<SystemMessage> context, String repositoryPath) {
@@ -38,30 +35,33 @@ public final class FileRouter extends AbstractBehavior<SystemMessage> {
     @Override
     public Receive<SystemMessage> createReceive() {
         return newReceiveBuilder()
-                .onMessage(MoveFile.class, this::onMoveFile)
+                .onMessage(RouteFile.class, this::onRouteFile)
                 .build();
     }
 
-    private Behavior<SystemMessage> onMoveFile(SystemMessage message) {
-        String filePath = (String) message.getContext();
-        File fileToMove = new File(filePath);
-        Path from = Paths.get(filePath);
-        Path to = Paths.get(String.format("%s/%s", repositoryPath, fileToMove.getName()));
-        try {
-            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
-            SystemMessage fileMoved = new FileMoved(message.getRequestId(), getContext().getSelf(), scannerRouter, message.getContext());
-            sendMessage(fileMoved);
-        } catch (IOException e) {
-            getContext().getLog().error("Failed to move file '{}'", filePath, e);
-            e.printStackTrace(); // TODO handle failure
-        }
+    private Behavior<SystemMessage> onRouteFile(SystemMessage message) {
+        XmItem fileToRoute = (XmItem) message.getContext();
+        fileToRoute.setDestination(resolveFileDestination(fileToRoute));
+        Command moveCommand = new Commands.RouteFile(fileToRoute);
+        XmCommand moveCommandMessage = new XmCommand(message.getRequestId(), message.from(), fileCommander, moveCommand);
+        sendMessageToCommander(moveCommandMessage);
         return this;
     }
 
-    private void sendMessage(SystemMessage message) {
+    private String resolveFileDestination(XmItem xmItem) {
+        return String.format("%s/%s", repositoryPath, xmItem.getName()); //TODO implement routing rules
+    }
+
+    private void sendMessageToScanner(SystemMessage message) {
         if (scannerRouter == null)
-            scannerRouter = routerRegistry.getRouter("scanner-pool");
+            scannerRouter = routerRegistry.getRouter("file-scanner-pool");
         scannerRouter.tell(message);
+    }
+
+    private void sendMessageToCommander(XmCommand message) {
+        if (fileCommander == null)
+            fileCommander = routerRegistry.getRouter("file-commander-pool");
+        fileCommander.tell(message);
     }
 
 }

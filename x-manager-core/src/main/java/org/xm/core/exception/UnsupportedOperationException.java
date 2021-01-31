@@ -1,6 +1,8 @@
 package org.xm.core.exception;
 
-public class UnsupportedOperationException extends Exception {
+import java.io.IOException;
+
+public class UnsupportedOperationException extends IOException {
 
     public UnsupportedOperationException(String message) {
         super(message);

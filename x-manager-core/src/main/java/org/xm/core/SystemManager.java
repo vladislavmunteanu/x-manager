@@ -4,11 +4,13 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.*;
+import org.xm.core.system.FileCommander;
 import org.xm.core.system.FileRouter;
 import org.xm.core.system.FileScanner;
 import org.xm.core.system.RouterRegistry;
 import org.xm.core.system.message.StartSystem;
 import org.xm.core.system.message.SystemMessage;
+import org.xm.core.system.message.XmCommand;
 
 public final class SystemManager extends AbstractBehavior<SystemMessage> {
 
@@ -40,10 +42,13 @@ public final class SystemManager extends AbstractBehavior<SystemMessage> {
             int poolSize = 2;
             PoolRouter<SystemMessage> scannerPool = Routers.pool(poolSize, Behaviors.supervise(FileScanner.create(conf.getConnectorPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
             PoolRouter<SystemMessage> fileRouterPool = Routers.pool(poolSize, Behaviors.supervise(FileRouter.create(conf.getRepositoryPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
-            ActorRef<SystemMessage> scannerRouter = getContext().spawn(scannerPool, "scanner-pool");
+            PoolRouter<SystemMessage> fileCommanderPool = Routers.pool(poolSize, Behaviors.supervise(FileCommander.create(conf.getRepositoryPath())).onFailure(SupervisorStrategy.restart())).withRoundRobinRouting();
+            ActorRef<SystemMessage> scannerRouter = getContext().spawn(scannerPool, "file-scanner-pool");
             ActorRef<SystemMessage> fileRouter = getContext().spawn(fileRouterPool, "file-router-pool");
-            routerRegistry.registerRouter("scanner-pool", scannerRouter);
+            ActorRef<SystemMessage> fileCommander = getContext().spawn(fileCommanderPool, "file-commander-pool");
+            routerRegistry.registerRouter("file-scanner-pool", scannerRouter);
             routerRegistry.registerRouter("file-router-pool", fileRouter);
+            routerRegistry.registerRouter("file-commander-pool", fileCommander);
             systemStarted = true;
         }
         getContext().getLog().info("System is up and running");

@@ -3,7 +3,9 @@ package org.xm.core.system.worker;
 import akka.actor.typed.ActorRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xm.core.system.message.MoveFile;
+import org.xm.core.system.file.XmFile;
+import org.xm.core.system.file.XmItem;
+import org.xm.core.system.message.RouteFile;
 import org.xm.core.system.message.SystemMessage;
 
 import java.io.File;
@@ -35,8 +37,9 @@ public class ScannerWorker implements Runnable {
             String fileToProcess = scan(connectorPath);
             if (fileToProcess != null) {
                 Long requestId = fileToProcess.hashCode() + System.currentTimeMillis();
-                SystemMessage moveFile = new MoveFile(requestId, scanner, scanner, fileToProcess);
-                scanner.tell(moveFile);
+                XmItem fileToRoute = new XmFile(fileToProcess);
+                SystemMessage routeFileMessage = new RouteFile(requestId, scanner, scanner, fileToRoute);
+                scanner.tell(routeFileMessage);
             } else {
                 if (filesCache.size() > 0)
                     filesCache.clear();
@@ -63,7 +66,7 @@ public class ScannerWorker implements Runnable {
                         filesCache.add(file.getAbsolutePath());
                         return file.getAbsolutePath();
                     } catch (IOException e) {
-                        logger.warn("Skip file '{}' as it's already in progress", file, e);
+                        //logger.warn("Skip file '{}' as it's already in progress", file, e);
                     }
 
                 } else if (file.isDirectory() && !filesCache.contains(file.getAbsolutePath())) {
