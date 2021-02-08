@@ -1,11 +1,8 @@
 package org.xm.core.system.command;
 
 import org.xm.core.system.file.XmItem;
-
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 
 public class Commands {
 
@@ -60,8 +57,6 @@ public class Commands {
         @Override
         public void execute() throws IOException {
             xmItem.move();
-            Path lockedFile = Paths.get(String.format("%s.lock", xmItem.getLocation()));
-            Files.deleteIfExists(lockedFile);
-        }
+         }
     }
 }

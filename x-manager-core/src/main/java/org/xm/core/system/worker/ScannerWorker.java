@@ -10,11 +10,16 @@ import org.xm.core.system.message.SystemMessage;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class ScannerWorker implements Runnable {
 
@@ -34,11 +39,15 @@ public class ScannerWorker implements Runnable {
     @Override
     public void run() {
         while (!canStop) {
-            String fileToProcess = scan(connectorPath);
+            XmItem fileToProcess = null;
+            try {
+                fileToProcess = scan(connectorPath);
+            } catch (IOException e) {
+                logger.error("Failed to scan connector directory.", e);
+            }
             if (fileToProcess != null) {
-                Long requestId = fileToProcess.hashCode() + System.currentTimeMillis();
-                XmItem fileToRoute = new XmFile(fileToProcess);
-                SystemMessage routeFileMessage = new RouteFile(requestId, scanner, scanner, fileToRoute);
+                Long requestId = fileToProcess.getLocation().hashCode() + System.currentTimeMillis();
+                SystemMessage routeFileMessage = new RouteFile(requestId, scanner, scanner, fileToProcess);
                 scanner.tell(routeFileMessage);
             } else {
                 if (filesCache.size() > 0)
@@ -52,49 +61,63 @@ public class ScannerWorker implements Runnable {
         }
     }
 
-    private String scan(String connectorPath) {
+    public void canStop() {
+        this.canStop = true;
+    }
+
+    public void resume() {
+        this.canStop = false;
+    }
+
+    private XmItem scan(String connectorPath) throws IOException {
         File connector = new File(connectorPath);
         File[] files = connector.listFiles();
         if (files != null && files.length > 0) {
             for (File file : files) {
-                if (file.getName().startsWith("."))
-                    filesCache.add(file.getAbsolutePath());
-                if (file.isFile() && !filesCache.contains(file.getAbsolutePath()) && !file.getName().endsWith(".lock")) {
-                    Path lockedFilePath = Paths.get(String.format("%s.lock", file));
-                    try {
-                        Files.createFile(lockedFilePath);
-                        filesCache.add(file.getAbsolutePath());
-                        return file.getAbsolutePath();
-                    } catch (IOException e) {
-                        //logger.warn("Skip file '{}' as it's already in progress", file, e);
+                String fileName = file.getName();
+                String filePath = file.getAbsolutePath();
+                if (fileName.startsWith("."))
+                    filesCache.add(filePath);
+                if (!filesCache.contains(filePath)) {
+                    if (file.isFile()) {
+                        FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+                        FileLock lock;
+                        try {
+                            lock = channel.lock();
+                            XmItem xmFile = new XmFile(filePath);
+                            ((XmFile) xmFile).setItemChannel(channel);
+                            ((XmFile) xmFile).setItemLock(lock);
+                            filesCache.add(filePath);
+                            return xmFile;
+                        } catch (OverlappingFileLockException ignored) {
+                            //logger.info("Skipping file: " + filePath);
+                        }
                     }
 
-                } else if (file.isDirectory() && !filesCache.contains(file.getAbsolutePath())) {
-                    return scan(file.getAbsolutePath());
+                    if (file.isDirectory()) {
+                        if (isEmpty(filePath))
+                            Files.delete(Paths.get(filePath));
+                        else {
+                            XmItem xmFile = scan(filePath);
+                            if (xmFile != null)
+                                return xmFile;
+                        }
+                    }
                 }
             }
-        } else if (!connectorPath.equals(this.connectorPath) && !connectorPath.endsWith(".lock")) {
-            Path lockedFolderPath = Paths.get(String.format("%s.lock", connectorPath));
-            try {
-                Files.createFile(lockedFolderPath);
-                filesCache.add(connectorPath);
-            } catch (IOException e) {
-                logger.warn("Folder '{}' was deleted already", connectorPath);
-            }
-            try {
-                Files.delete(Paths.get(connectorPath));
-                Files.delete(lockedFolderPath);
-                filesCache.remove(connectorPath);
-            } catch (IOException e) {
-                logger.error("Failed to delete empty folder '{}'", connectorPath, e);
-            }
         }
-
         return null;
     }
 
-    public void canStop() {
-        this.canStop = true;
+
+    private boolean isEmpty(String path) throws IOException {
+        Path dirPath = Paths.get(path);
+        if (Files.isDirectory(dirPath)) {
+            try (Stream<Path> entries = Files.list(dirPath)) {
+                return !entries.findFirst().isPresent();
+            }
+        }
+        return false;
     }
 
 

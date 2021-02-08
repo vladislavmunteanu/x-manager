@@ -2,7 +2,6 @@ package org.xm.core.system.file;
 
 import org.xm.core.exception.UnsupportedOperationException;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

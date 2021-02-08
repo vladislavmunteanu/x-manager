@@ -42,9 +42,9 @@ public final class FileRouter extends AbstractBehavior<SystemMessage> {
     private Behavior<SystemMessage> onRouteFile(SystemMessage message) {
         XmItem fileToRoute = (XmItem) message.getContext();
         fileToRoute.setDestination(resolveFileDestination(fileToRoute));
-        Command moveCommand = new Commands.RouteFile(fileToRoute);
-        XmCommand moveCommandMessage = new XmCommand(message.getRequestId(), message.from(), fileCommander, moveCommand);
-        sendMessageToCommander(moveCommandMessage);
+        Command routeCommand = new Commands.RouteFile(fileToRoute);
+        SystemMessage routeFile = new XmCommand(message.getRequestId(), message.from(), fileCommander, routeCommand);
+        sendMessageToCommander(routeFile);
         return this;
     }
 
@@ -58,7 +58,7 @@ public final class FileRouter extends AbstractBehavior<SystemMessage> {
         scannerRouter.tell(message);
     }
 
-    private void sendMessageToCommander(XmCommand message) {
+    private void sendMessageToCommander(SystemMessage message) {
         if (fileCommander == null)
             fileCommander = routerRegistry.getRouter("file-commander-pool");
         fileCommander.tell(message);

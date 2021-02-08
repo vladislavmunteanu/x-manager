@@ -8,6 +8,8 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import org.xm.core.system.file.XmItem;
 import org.xm.core.system.message.RouteFile;
+import org.xm.core.system.message.StartSystem;
+import org.xm.core.system.message.StopSystem;
 import org.xm.core.system.message.SystemMessage;
 import org.xm.core.system.worker.ScannerWorker;
 
@@ -16,6 +18,7 @@ public final class FileScanner extends AbstractBehavior<SystemMessage> {
     private String connectorPath;
     private ActorRef<SystemMessage> fileRouter;
     private RouterRegistry routerRegistry;
+    private ScannerWorker scannerWorker;
 
     private FileScanner(ActorContext<SystemMessage> context, String connectorPath) {
         super(context);
@@ -26,7 +29,7 @@ public final class FileScanner extends AbstractBehavior<SystemMessage> {
     }
 
     private void _init() {
-        ScannerWorker scannerWorker = new ScannerWorker(connectorPath, getContext().getSelf());
+        this.scannerWorker = new ScannerWorker(connectorPath, getContext().getSelf());
         Thread scanThread = new Thread(scannerWorker);
         scanThread.start();
     }
@@ -39,12 +42,24 @@ public final class FileScanner extends AbstractBehavior<SystemMessage> {
     public Receive<SystemMessage> createReceive() {
         return newReceiveBuilder()
                 .onMessage(RouteFile.class, this::onRouteFile)
+                .onMessage(StartSystem.class, this::onStartSystem)
+                .onMessage(StopSystem.class, this::onStopSystem)
                 .build();
     }
 
     private Behavior<SystemMessage> onRouteFile(SystemMessage message) {
         SystemMessage routeFileMessage = new RouteFile(message.getRequestId(), getContext().getSelf(), fileRouter, (XmItem) message.getContext());
         sendMessage(routeFileMessage);
+        return this;
+    }
+
+    private Behavior<SystemMessage> onStartSystem(SystemMessage message) {
+        this.scannerWorker.resume();
+        return this;
+    }
+
+    private Behavior<SystemMessage> onStopSystem(SystemMessage message) {
+        this.scannerWorker.canStop();
         return this;
     }
 

@@ -1,5 +1,8 @@
 package org.xm.core;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class Configuration {
 
     private String connectorPath;
@@ -18,4 +21,5 @@ public class Configuration {
         //return this.repositoryPath;
         return "/Users/Vlad/VladMac/WorkSpace/Maculator/test-xm/repository";
     }
+
 }
